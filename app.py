@@ -1,4 +1,5 @@
-from utils.globals import bot
+from utils.globals import BOT
+from handlers import command_handlers
 
 if __name__ == '__main__':
-    bot.infinity_polling()
+    BOT.infinity_polling()

@@ -1,0 +1,4 @@
+{
+  "help_text": "Elérhető parancsok listája:\n- /login\n- /logout\n- /new_account\n- /new_transfer\n- /list_transfers\n- /manage_pockets\n- /see_dough\n- /get_notifications\n- /get_stats",
+  "new_account_text": "Új fiók létrehozásához a következő adatokat kell megadnod:\n- username (legalább 6 karakter)\n- account_number\n- password (min. 2 szám, min. 1 speciális karakter, min. összesen 8 karakter)\n- lastname\n- firstname\n\nKérlek ezt a formátumot használd:\nusername - felhasználóneved00\naccount_number - 123456\n..."
+}
