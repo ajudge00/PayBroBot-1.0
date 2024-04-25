@@ -13,3 +13,30 @@ LONG_TEXTS: Final = json.load(open(long_texts_path, "r", encoding="utf-8"))
 
 DB_CONN: Final = sqlite3.connect("database.db", check_same_thread=False)
 DB_CURSOR: Final = DB_CONN.cursor()
+
+
+# SESSION
+LOGGED_IN = False
+CURRENT_USER = None
+CHAT_ID = -1
+
+try:
+    from utils import dao
+    session_dump = json.load(open("session_dump.json", "r", encoding="utf-8"))
+
+    user = dao.Dao.get_user_by(user_id=session_dump['user_id'])
+
+    LOGGED_IN = True
+    CURRENT_USER = user
+    CHAT_ID = session_dump['chat_id']
+
+    print(f"CHAT_ID: {CHAT_ID}\nLOGGED_IN: {LOGGED_IN}\nCURRENT_USER: {CURRENT_USER.username}")
+except FileNotFoundError:
+    print("no session, i guess")
+
+
+def number_formatter(number):
+    if isinstance(number, float):
+        number = int(round(number, 0))
+
+    return "{:,}".format(number).replace(',', '.')

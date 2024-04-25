@@ -1,11 +1,19 @@
+
+
 class Balance:
-    def __init__(self, pockets: dict):
+    def __init__(self, pockets=None):
+        if pockets is None:
+            pockets = {'noname': 10000}
         self._pockets = pockets
 
     def __str__(self):
+        from utils.globals import number_formatter
         balance_str = ""
         for pocket in self._pockets.keys():
-            balance_str += f'{pocket}: {self._pockets[pocket]}\n'
+            balance_str += ((f'Zseb neve: \'{pocket}\' --- ' +
+                            f'Összeg: {number_formatter(self._pockets[pocket])} HUF\n'))
+
+        balance_str += '--------------------\nTeljes egyenleg: ' + number_formatter(self.get_full_balance()) + ' HUF'
         return balance_str
 
     def add_pocket(self, pocket_name: str):
@@ -22,8 +30,11 @@ class Balance:
         else:
             del self._pockets[pocket_name]
 
-    def change_balance(self, pocket_name: str, amount: int):
-        if pocket_name not in self._pockets.keys():
+    def change_balance(self, pocket_name: str = None, amount: int = 0):
+        if pocket_name is None:
+            default_pocket = list(self._pockets.keys())[0]
+            self._pockets[default_pocket] += amount
+        elif pocket_name not in self._pockets.keys():
             raise IOError('Pocket with this name does not exist')
         else:
             self._pockets[pocket_name] += amount
@@ -35,6 +46,8 @@ class Balance:
         balance = 0
         for pocket_name in self._pockets.keys():
             balance += self._pockets[pocket_name]
+
+
 
         return balance
 
