@@ -24,7 +24,7 @@ try:
     from utils import dao
     session_dump = json.load(open("session_dump.json", "r", encoding="utf-8"))
 
-    user = dao.Dao.get_user_by(user_id=session_dump['user_id'])
+    user = dao.UserDao.get_user_by(user_id=session_dump['user_id'])
 
     LOGGED_IN = True
     CURRENT_USER = user

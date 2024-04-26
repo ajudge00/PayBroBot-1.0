@@ -3,5 +3,5 @@
   "help_text_not_logged_in": "(nem vagy bejelentkezve)\nElérhető parancsok listája:\n- /login\n- /new_user",
   "new_user_text": "Új felhasználó létrehozásához a következő adatokat kell megadnod <strong>(ebben a sorrendben, vesszővel elválasztva)</strong>:\n\n- felhasználónév (legalább 6 karakter)\n- keresztnév\n- vezetéknév\n- jelszó (min. 2 szám, min. 1 speciális karakter, min. összesen 8 karakter)\n- számlaszám",
   "login_warning": "A funkció használatához be kell jelentkezned. (/login)",
-  "transfer_pocket_amount": "Kérlek add meg az átutalandó összeget, és a zsebet amelyből szeretnéd, hogy az levonásra kerüljön.\n\nIlyen formátumban add meg:\n<em>zseb_neve, 2500</em>\n\nEgyenleged:\n--------------------"
+  "transfer_pocket_amount": "Kérlek add meg az átutalandó összeget, és a zsebet amelyből szeretnéd, hogy az levonásra kerüljön.\n\nIlyen formátumban add meg:\n<em>zseb_neve, 2500</em>\n\nEgyenleged:\n--------------------\n"
 }

@@ -3,7 +3,7 @@ import re
 import bcrypt
 
 from models.user import User
-from utils.dao import Dao
+from utils.dao import UserDao, AccountDao
 from utils import globals
 
 
@@ -19,7 +19,7 @@ def check_password(plain_text_password, hashed_password):
 state = ""
 
 
-class UserOps:
+class UserController:
     @staticmethod
     def create_user(message):
         creds = message.text.split(',')
@@ -39,12 +39,13 @@ class UserOps:
         acc_number = creds[4]
 
         if username and acc_number and password and first_name and last_name:
-            if Dao.get_user_by(username=username) is not None:
+            if UserDao.get_user_by(username=username) is not None:
                 globals.BOT.reply_to(message, "Ilyen felhasználónév már létezik!")
                 return
 
             user = User(-1, username, first_name, last_name, password, acc_number)
-            Dao.insert_user(user)
+            UserDao.insert_user(user)
+            globals.BOT.send_message(message.chat.id, "Sikeres regisztráció! /login")
         else:
             globals.BOT.reply_to(message, "Nem adtál meg minden adatot!")
 
@@ -52,13 +53,13 @@ class UserOps:
     def login_username(message):
         username = message.text.strip()
 
-        if Dao.get_user_by(username=username) is None:
+        if UserDao.get_user_by(username=username) is None:
             globals.BOT.reply_to(message, "Ilyen felhasználó nem létezik!")
             return
 
-        user_in_db = Dao.get_user_by(username=username)
+        user_in_db = UserDao.get_user_by(username=username)
         sent_msg = globals.BOT.send_message(message.chat.id, "Mi a jelszavad?")
-        globals.BOT.register_next_step_handler(sent_msg, UserOps.login_password, user_in_db)
+        globals.BOT.register_next_step_handler(sent_msg, UserController.login_password, user_in_db)
 
     @staticmethod
     def login_password(message, user_in_db):
@@ -71,7 +72,7 @@ class UserOps:
         else:
             sent_msg = globals.BOT.send_message(message.chat.id, "Helytelen jelszó. Próbáld újra. Vagy /cancel a "
                                                                  "kilépéshez.")
-            globals.BOT.register_next_step_handler(sent_msg, UserOps.login_password, user_in_db)
+            globals.BOT.register_next_step_handler(sent_msg, UserController.login_password, user_in_db)
 
     @staticmethod
     def logout_user(message):
@@ -81,7 +82,7 @@ class UserOps:
         globals.BOT.send_message(message.chat.id, "Kijelentkeztél.")
 
 
-class AccountOps:
+class AccountController:
 
     @staticmethod
     def new_transfer(message, beneficiary: User = None):
@@ -96,25 +97,25 @@ class AccountOps:
                 sent_msg = globals.BOT.send_message(message.chat.id, "Kérlek add meg a számlaszámot!")
                 state = "account_provided"
 
-            globals.BOT.register_next_step_handler(sent_msg, AccountOps.new_transfer)
+            globals.BOT.register_next_step_handler(sent_msg, AccountController.new_transfer)
         elif state == "user_provided" or state == "account_provided":
             user_to_transfer_to = message.text.strip()
 
             if state == "user_provided":
-                beneficiary = Dao.get_user_by(username=user_to_transfer_to)
+                beneficiary = UserDao.get_user_by(username=user_to_transfer_to)
             else:
-                beneficiary = Dao.get_user_by(account_num=user_to_transfer_to)
+                beneficiary = UserDao.get_user_by(account_num=user_to_transfer_to)
 
             if beneficiary is not None:
                 if beneficiary.user_id == globals.CURRENT_USER.user_id:
                     globals.BOT.send_message(message.chat.id, "Nem utalhatsz magadnak pénzt!")
                 else:
-                    balance = Dao.get_balance_by_user_id(globals.CURRENT_USER.user_id)
+                    balance = AccountDao.get_balance_by_user_id(globals.CURRENT_USER.user_id)
 
                     sent_msg = globals.BOT.send_message(message.chat.id,
-                                                        globals.LONG_TEXTS['transfer_pocket_amount'] + str(balance))
+                                                        globals.LONG_TEXTS['transfer_pocket_amount'] + str(balance), parse_mode='HTML')
                     state = "pocket_amount_provided"
-                    globals.BOT.register_next_step_handler(sent_msg, AccountOps.new_transfer, beneficiary)
+                    globals.BOT.register_next_step_handler(sent_msg, AccountController.new_transfer, beneficiary)
             else:
                 globals.BOT.send_message(message.chat.id, "Ilyen felhasználó nem létezik. Próbáld újra. /new_transfer")
         elif state == "pocket_amount_provided":
@@ -129,8 +130,13 @@ class AccountOps:
             elif amount > globals.CURRENT_USER.balance.get_pocket_balance(pocket):
                 globals.BOT.send_message(message.chat.id, "Nincs elég fedezet a választott zsebben. /new_transfer")
             else:
-                Dao.change_balance_by_user(beneficiary.user_id, amount=amount)
-                Dao.change_balance_by_user(globals.CURRENT_USER.user_id, pocket_name=pocket, amount=-amount)
+                AccountDao.change_balance_by_user(beneficiary.user_id, amount=amount)
+                AccountDao.change_balance_by_user(globals.CURRENT_USER.user_id, pocket_name=pocket, amount=-amount)
+                AccountDao.log_transfer(sender_id=globals.CURRENT_USER.user_id, beneficiary=beneficiary.user_id, amount=amount)
 
-                balance = Dao.get_balance_by_user_id(globals.CURRENT_USER.user_id)
-                globals.BOT.send_message(message.chat.id, "Sikeres átutalás!\n\nÚj egyenleged: \n" + str(balance))
+                balance = AccountDao.get_balance_by_user_id(globals.CURRENT_USER.user_id)
+                globals.BOT.send_message(message.chat.id, "Sikeres átutalás!\n\nÚj egyenleged:\n--------------------\n" + str(balance))
+
+    @staticmethod
+    def list_transfers(message):
+        globals.BOT.send_message(message.chat.id, AccountDao.list_transfers(globals.CURRENT_USER.user_id), parse_mode="HTML")

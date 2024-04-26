@@ -5,19 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1bda8e29-727f-4099-9418-67248f5ac7cd" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/handlers/account_ops.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/handlers/controller.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/dao.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/177c9eb1-cac8-4cd3-8e0c-d9b2eb7fad70.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/177c9eb1-cac8-4cd3-8e0c-d9b2eb7fad70.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/sqldialects.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/database.db" beforeDir="false" afterPath="$PROJECT_DIR$/database.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/handlers/command_handlers.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/command_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/handlers/user_handlers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/Balance.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/balance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/account_handlers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/account_ops.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/command_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/command_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/dao.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/dao.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/globals.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/globals.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/long_texts.json" beforeDir="false" afterPath="$PROJECT_DIR$/utils/long_texts.json" afterDir="false" />
     </list>
@@ -47,34 +42,34 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;Python.app.executor&quot;: &quot;Run&quot;,
-    &quot;Python.command_handlers.executor&quot;: &quot;Run&quot;,
-    &quot;Python.create_db.executor&quot;: &quot;Run&quot;,
-    &quot;Python.dao.executor&quot;: &quot;Run&quot;,
-    &quot;Python.globals.executor&quot;: &quot;Run&quot;,
-    &quot;Python.message_handlers.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test.executor&quot;: &quot;Run&quot;,
-    &quot;Python.user_handlers.executor&quot;: &quot;Run&quot;,
-    &quot;Python.user_ops.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "Python.app.executor": "Run",
+    "Python.command_handlers.executor": "Run",
+    "Python.create_db.executor": "Run",
+    "Python.dao.executor": "Run",
+    "Python.globals.executor": "Run",
+    "Python.message_handlers.executor": "Run",
+    "Python.test.executor": "Run",
+    "Python.user_handlers.executor": "Run",
+    "Python.user_ops.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "database.other",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;sqlite&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\Dev\Felev 04\PYTHON\Fizess-Teso-Bot\models" />
@@ -109,7 +104,7 @@
       <workItem from="1713875734557" duration="2754000" />
       <workItem from="1713896464803" duration="6370000" />
       <workItem from="1714034216373" duration="16356000" />
-      <workItem from="1714057916407" duration="4320000" />
+      <workItem from="1714057916407" duration="11224000" />
     </task>
     <servers />
   </component>

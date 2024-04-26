@@ -1,3 +1,6 @@
+import time
+from datetime import datetime
+
 from models.balance import Balance
 from models.user import User
 import bcrypt
@@ -10,9 +13,10 @@ def get_hashed_password(plain_text_password):
     return bcrypt.hashpw(bytes, bcrypt.gensalt())
 
 
-class Dao:
+class UserDao:
     @staticmethod
     def insert_user(user: User):
+        # user létrehozása
         stmt = "INSERT INTO users(username, first_name, last_name, password, account_num) VALUES(?, ?, ?, ?, ?)"
 
         DB_CURSOR.execute(stmt, (
@@ -25,8 +29,15 @@ class Dao:
 
         DB_CONN.commit()
 
+        # balance létrehozása default zsebbel
+        user_id_in_db = DB_CURSOR.execute("SELECT user_id from users where username = ?",
+                                          (user.username,)).fetchone()[0]
+        stmt = "INSERT INTO balances(user_id, pocket_name, balance) VALUES(?, 'default', 10000)"
+        DB_CURSOR.execute(stmt, (user_id_in_db,))
+        DB_CONN.commit()
+
     @staticmethod
-    def get_user_by(user_id: int = None, username: str = None, account_num: str = None) -> User:
+    def get_user_by(user_id: int = None, username: str = None, account_num: str = None):
         if sum(1 for param in (user_id, username, account_num) if param is not None) > 1:
             raise ValueError("Egyszerre csak pontosan egy paraméter használható.")
 
@@ -44,12 +55,17 @@ class Dao:
             res = DB_CURSOR.execute(stmt, (account_num,))
 
         result = res.fetchone()
-        user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, twofa = result
-        balance = Dao.get_balance_by_user_id(user_id_in_db)
-        user = User(user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, balance)
+        if result is not None:
+            user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, twofa = result
+            balance = AccountDao.get_balance_by_user_id(user_id_in_db)
+            user = User(user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, balance)
+        else:
+            return None
 
         return user
 
+
+class AccountDao:
     @staticmethod
     def get_balance_by_user_id(user_id):
         stmt = "SELECT * FROM balances WHERE user_id = ?"
@@ -86,45 +102,41 @@ class Dao:
 
         DB_CONN.commit()
 
-    # @staticmethod
-    # def get_user_by_account_number(account_num: str):
-    #     stmt = "SELECT * FROM users WHERE account_num = ?"
-    #
-    #     res = DB_CURSOR.execute(stmt, (account_num,))
-    #     result = res.fetchall()
-    #
-    #     user_id_in_db, username, first_name, last_name, password, account_num, twofa = result[0]
-    #     balance = Dao.get_balance_by_user_id(user_id_in_db)
-    #     user = User(user_id_in_db, username, first_name, last_name, password, account_num, balance)
-    #
-    #     return user
+    @staticmethod
+    def log_transfer(sender_id, beneficiary, amount):
+        stmt = "INSERT INTO transfers(sender_id, receiver_id, amount, timestamp) VALUES(?, ?, ?, ?)"
+        DB_CURSOR.execute(stmt, (sender_id, beneficiary, amount, datetime.now()))
+        DB_CONN.commit()
 
-    # @staticmethod
-    # def get_user_by_id(user_id):
-    #     stmt = "SELECT * FROM users WHERE user_id = ?"
-    #
-    #     res = DB_CURSOR.execute(stmt, (user_id,))
-    #     result = res.fetchall()
-    #
-    #     user_id_in_db, username, first_name, last_name, password, account_num, twofa = result[0]
-    #     balance = Dao.get_balance_by_user_id(user_id)
-    #     user = User(user_id_in_db, username, first_name, last_name, password, account_num, balance)
-    #
-    #     return user
+    @staticmethod
+    def list_transfers(user_id):
+        stmt = """
+            SELECT
+                strftime('%Y-%m-%d %H:%M:%S', t.timestamp) as timestamp,
+                s.user_id, s.username, s.first_name, s.last_name,
+                r.user_id, r.username, r.first_name, r.last_name,
+                t.amount
+            FROM transfers t
+            LEFT JOIN users s ON t.sender_id = s.user_id
+            LEFT JOIN users r ON t.receiver_id = r.user_id
+            WHERE t.sender_id = ? or t.receiver_id = ?
+            """
 
-    # @staticmethod
-    # def get_user_by_username(username) -> list[User]:
-    #     stmt = "SELECT * FROM users WHERE username = ?"
-    #
-    #     res = DB_CURSOR.execute(stmt, (username,))
-    #     resultset = res.fetchall()
-    #
-    #     users = []
-    #     for row in resultset:
-    #         user_id, username, first_name, last_name, password, account_num, twofa = row
-    #         balance = Dao.get_balance_by_user_id(user_id)
-    #         user = User(user_id, username, first_name, last_name,
-    #                     password, account_num, balance if balance != {} else None)
-    #         users.append(user)
-    #
-    #     return users
+        DB_CURSOR.execute(stmt, (user_id, user_id))
+        result = DB_CURSOR.fetchall()
+
+        res_str = "Tranzakcióid:\n"
+
+        from utils.globals import number_formatter
+
+        for row in result:
+            (timestamp, s_user_id, sender_username, sender_first_name, sender_last_name,
+             r_user_id, rec_username, rec_first_name, rec_last_name, amount) = row
+
+            res_str += "---------------------\n"
+            res_str += f"<b>Időpont:</b> {timestamp}\n"
+            res_str += f"<b>Küldő:</b> {'Te' if s_user_id == user_id else sender_username}\n"
+            res_str += f"<b>Küldő:</b> {'Te' if r_user_id == user_id else rec_username}\n"
+            res_str += f"<b>Összeg:</b> {number_formatter(amount)} HUF\n"
+
+        return res_str
