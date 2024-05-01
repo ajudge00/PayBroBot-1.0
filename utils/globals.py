@@ -3,8 +3,9 @@ import sqlite3
 from typing import Final
 import telebot
 import json
-
 from telebot import types
+
+
 
 TOKEN: Final = open("token.txt", 'r').read()
 

@@ -1,5 +1,5 @@
 from utils.globals import BOT
-from handlers import command_handler
+from main import command_handler
 import json
 
 if __name__ == '__main__':

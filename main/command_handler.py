@@ -1,11 +1,11 @@
 from utils import globals
-from telebot import types
-from handlers.controller import UserController, AccountController
+from main.convo_handler import UserHandler, AccountHandler
 
 
-def set_chat_id(chat_id: int):
+def set_chat_id(chat_id):
     if globals.CHAT_ID == -1:
         globals.CHAT_ID = chat_id
+        print("chat_id set")
 
 
 @globals.BOT.message_handler(commands=['status'])
@@ -20,7 +20,6 @@ def status(message):
 @globals.BOT.message_handler(commands=['start', 'help', 'cancel'])
 def start_help(message):
     set_chat_id(message.chat.id)
-
     text = "Üdvözöl a Fizess, Tesó!\n\n"
     if globals.LOGGED_IN:
         globals.BOT.send_message(message.chat.id, text + globals.LONG_TEXTS['help_text_logged_in'])
@@ -34,15 +33,19 @@ def login(message):
     if globals.LOGGED_IN:
         globals.BOT.send_message(message.chat.id, "Már be vagyy jelentkezve. /logout")
     else:
-        sent_msg = globals.BOT.send_message(message.chat.id, "Mi a felhasználóneved?")
-        globals.BOT.register_next_step_handler(sent_msg, UserController.login_username)
+        sent_msg = globals.BOT.send_message(
+            message.chat.id,
+            "Kérlek írd be a felhasználóneved és a jelszavad, <b>vesszővel elválasztva</b>!\n"
+            "Pl. user_ursula123, jelszo192168",
+            parse_mode="HTML")
+        globals.BOT.register_next_step_handler(sent_msg, UserHandler.login)
 
 
 @globals.BOT.message_handler(commands=['logout'])
 def logout(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
-        UserController.logout_user(message)
+        UserHandler.logout_user(message)
     else:
         globals.BOT.send_message(message.chat.id, "Nem vagy bejelentkezve. /login")
 
@@ -51,7 +54,7 @@ def logout(message):
 def new_user(message):
     set_chat_id(message.chat.id)
     sent_msg = globals.BOT.send_message(message.chat.id, globals.LONG_TEXTS['new_user_text'], parse_mode='HTML')
-    globals.BOT.register_next_step_handler(sent_msg, UserController.create_user)
+    globals.BOT.register_next_step_handler(sent_msg, UserHandler.create_user)
 
 
 @globals.BOT.message_handler(commands=['new_transfer'])
@@ -64,7 +67,7 @@ def new_transfer(message):
                 message.chat.id,
                 text="Felhasználónév vagy számlaszám alapján szeretnél utalni?",
                 reply_markup=keyboard)
-            globals.BOT.register_next_step_handler(sent_msg, AccountController.new_transfer)
+            globals.BOT.register_next_step_handler(sent_msg, AccountHandler.new_transfer)
     else:
         globals.BOT.send_message(message.chat.id, globals.LONG_TEXTS['login_warning'])
 
@@ -73,7 +76,7 @@ def new_transfer(message):
 def list_transfers(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
-        AccountController.list_transfers(message)
+        AccountHandler.list_transfers(message)
     else:
         globals.BOT.send_message(message.chat.id, "Nem vagy bejelentkezve. /login")
 
@@ -82,7 +85,7 @@ def list_transfers(message):
 def manage_pockets(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
-        AccountController.manage_pockets(message)
+        AccountHandler.manage_pockets(message)
     else:
         globals.BOT.send_message(message.chat.id, "Nem vagy bejelentkezve. /login")
 
@@ -90,7 +93,11 @@ def manage_pockets(message):
 @globals.BOT.message_handler(commands=['see_dough'])
 def see_dough(message):
     set_chat_id(message.chat.id)
-    globals.BOT.send_message(message.chat.id, "Egyenleged:\n--------------------\n" + str(globals.CURRENT_USER.balance))
+    globals.BOT.send_message(
+        message.chat.id,
+        "Egyenleged:\n--------------------\n" +
+        str(globals.CURRENT_USER.balance)
+    )
 
 
 @globals.BOT.message_handler(commands=['get_stats'])

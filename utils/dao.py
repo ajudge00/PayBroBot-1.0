@@ -1,10 +1,10 @@
 from datetime import datetime
-
 from models.balance import Balance
-from models.user import User
+
 import bcrypt
 
 from utils import globals
+from models.user import User
 
 
 def get_hashed_password(plain_text_password):
@@ -30,7 +30,7 @@ class UserDao:
 
         # balance létrehozása default zsebbel
         user_id_in_db = globals.DB_CURSOR.execute("SELECT user_id from users where username = ?",
-                                          (user.username,)).fetchone()[0]
+                                                  (user.username,)).fetchone()[0]
         stmt = "INSERT INTO balances(user_id, pocket_name, balance) VALUES(?, 'default', 10000)"
         globals.DB_CURSOR.execute(stmt, (user_id_in_db,))
         globals.DB_CONN.commit()
@@ -56,7 +56,7 @@ class UserDao:
         result = res.fetchone()
         if result is not None:
             user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, twofa = result
-            balance = AccountDao.get_balance_by_user_id(user_id_in_db)
+            balance = BalanceDao.get_balance_by_user_id(user_id_in_db)
             user = User(user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, balance)
         else:
             return None
@@ -64,7 +64,9 @@ class UserDao:
         return user
 
 
-class AccountDao:
+
+
+class BalanceDao:
     @staticmethod
     def get_balance_by_user_id(user_id):
         stmt = "SELECT * FROM balances WHERE user_id = ?"
@@ -128,7 +130,6 @@ class AccountDao:
 
         from utils.globals import number_formatter
 
-
         for row in result:
             (timestamp, s_user_id, sender_username, sender_first_name, sender_last_name,
              r_user_id, rec_username, rec_first_name, rec_last_name, amount) = row
@@ -147,7 +148,18 @@ class AccountDao:
     @staticmethod
     def insert_pocket(name: str):
         print("insert pocket: ", globals.CURRENT_USER.user_id)
-        sql = f"INSERT INTO balances(user_id, pocket_name) VALUES(?,?)"
+        sql = "INSERT INTO balances(user_id, pocket_name) VALUES(?,?)"
         globals.DB_CURSOR.execute(sql, (globals.CURRENT_USER.user_id, name))
 
+        globals.DB_CONN.commit()
+
+    @staticmethod
+    def remove_pocket(pocket_name):
+        pass
+
+    @staticmethod
+    def rename_pocket(user_id, old_name, new_name):
+        sql = 'UPDATE balances SET pocket_name = ? WHERE pocket_name = ? AND user_id = ?'
+
+        globals.DB_CURSOR.execute(sql, (new_name, old_name, user_id))
         globals.DB_CONN.commit()

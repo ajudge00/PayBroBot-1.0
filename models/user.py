@@ -2,7 +2,8 @@ from models.balance import Balance
 
 
 class User:
-    def __init__(self, user_id: int, username: str, first_name: str, last_name: str, password: str, account_num: str, balance: Balance=Balance({'noname': 10000})):
+    def __init__(self, user_id: int, username: str, first_name: str, last_name: str,
+                 password: str, account_num: str, balance: Balance = Balance({'noname': 10000})):
         self.user_id = user_id
         self.username = username
         self.first_name = first_name
@@ -12,4 +13,5 @@ class User:
         self.balance = balance
 
     def __str__(self):
-        return f'{self.user_id} {self.username} {self.account_num} {self.password} {self.first_name} {self.last_name} {self.balance}'
+        return (f'{self.user_id} {self.username} {self.account_num} '
+                f'{self.password} {self.first_name} {self.last_name} {self.balance}')
