@@ -1,1 +1,2 @@
-"{:.}".format(10000)
+choices = ["asd", "bsd"]
+print(tuple(choices))

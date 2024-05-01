@@ -1,6 +1,7 @@
 import os
 import re
 import bcrypt
+from telebot import types
 
 from models.user import User
 from utils.dao import UserDao, AccountDao
@@ -44,7 +45,7 @@ class UserController:
                 return
 
             user = User(-1, username, first_name, last_name, password, acc_number)
-            UserDao.insert_user(user)
+            UserDao.create_user(user)
             globals.BOT.send_message(message.chat.id, "Sikeres regisztráció! /login")
         else:
             globals.BOT.reply_to(message, "Nem adtál meg minden adatot!")
@@ -137,6 +138,50 @@ class AccountController:
                 balance = AccountDao.get_balance_by_user_id(globals.CURRENT_USER.user_id)
                 globals.BOT.send_message(message.chat.id, "Sikeres átutalás!\n\nÚj egyenleged:\n--------------------\n" + str(balance))
 
+        state = ""
+
     @staticmethod
     def list_transfers(message):
         globals.BOT.send_message(message.chat.id, AccountDao.list_transfers(globals.CURRENT_USER.user_id), parse_mode="HTML")
+
+    @staticmethod
+    def manage_pockets(message):
+        global state
+        pockets = globals.CURRENT_USER.balance.get_all_pockets()
+
+        if state == "":
+            choices = []
+
+            # Max. 4 zseb lehet
+            if len(pockets.keys()) != 4:
+                choices.append('Új zseb létrehozása')
+
+            # Min. 1 zsebnek lennie kell
+            if len(pockets.keys()) != 1:
+                choices.append('Zseb törlése')
+
+            choices.append('Meglévő zseb módosítása')
+            keyboard = globals.keyboard_maker(choices)
+
+            state = "action_provided"
+            sent_msg = globals.BOT.send_message(message.chat.id, text="Válassz!", reply_markup=keyboard)
+            globals.BOT.register_next_step_handler(sent_msg, AccountController.manage_pockets)
+
+        elif state == "action_provided":
+            if message.text == "Új zseb létrehozása":
+                sent_msg = globals.BOT.send_message(message.chat.id, "Mi legyen a zseb neve?")
+                state = "pocket_name_provided"
+                globals.BOT.register_next_step_handler(sent_msg, AccountController.manage_pockets)
+            elif message.text == "Zseb törlése":
+                pass
+            else:
+                pass
+        elif state == "pocket_name_provided":
+            new_pocket_name = message.text.strip()
+
+            if new_pocket_name not in pockets.keys():
+                AccountDao.insert_pocket(new_pocket_name)
+            else:
+                sent_msg = globals.BOT.send_message(message.chat.id, "Ilyen nevű zseb már létezik!")
+                state = ""
+                globals.BOT.register_next_step_handler(sent_msg, AccountController.manage_pockets)

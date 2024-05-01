@@ -4,6 +4,8 @@ from typing import Final
 import telebot
 import json
 
+from telebot import types
+
 TOKEN: Final = open("token.txt", 'r').read()
 
 BOT: Final = telebot.TeleBot(TOKEN)
@@ -30,7 +32,7 @@ try:
     CURRENT_USER = user
     CHAT_ID = session_dump['chat_id']
 
-    print(f"CHAT_ID: {CHAT_ID}\nLOGGED_IN: {LOGGED_IN}\nCURRENT_USER: {CURRENT_USER.username}")
+    print(f"CHAT_ID: {CHAT_ID}\nLOGGED_IN: {LOGGED_IN}\nCURRENT_USER: {CURRENT_USER.user_id} {CURRENT_USER.username}")
 except FileNotFoundError:
     print("no session, i guess")
 
@@ -40,3 +42,14 @@ def number_formatter(number):
         number = int(round(number, 0))
 
     return "{:,}".format(number).replace(',', '.')
+
+
+def keyboard_maker(choices: list) -> types.ReplyKeyboardMarkup:
+    keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+
+    for choice in choices:
+        button = types.KeyboardButton(choice)
+        keyboard.add(button)
+
+    return keyboard
+

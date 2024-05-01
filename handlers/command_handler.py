@@ -10,13 +10,17 @@ def set_chat_id(chat_id: int):
 
 @globals.BOT.message_handler(commands=['status'])
 def status(message):
-    globals.BOT.send_message(message.chat.id, f"CHAT_ID: {globals.CHAT_ID}\nLOGGED_IN: {globals.LOGGED_IN}\n" +
-                             f"CURRENT_USER: {globals.CURRENT_USER.username}")
+    globals.BOT.send_message(
+        message.chat.id,
+        f"CHAT_ID: {globals.CHAT_ID}\nLOGGED_IN:"
+        f"{globals.LOGGED_IN}\n" +
+        f"CURRENT_USER: {globals.CURRENT_USER.username}")
 
 
 @globals.BOT.message_handler(commands=['start', 'help', 'cancel'])
 def start_help(message):
     set_chat_id(message.chat.id)
+
     text = "Üdvözöl a Fizess, Tesó!\n\n"
     if globals.LOGGED_IN:
         globals.BOT.send_message(message.chat.id, text + globals.LONG_TEXTS['help_text_logged_in'])
@@ -28,7 +32,7 @@ def start_help(message):
 def login(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
-        pass
+        globals.BOT.send_message(message.chat.id, "Már be vagyy jelentkezve. /logout")
     else:
         sent_msg = globals.BOT.send_message(message.chat.id, "Mi a felhasználóneved?")
         globals.BOT.register_next_step_handler(sent_msg, UserController.login_username)
@@ -54,17 +58,13 @@ def new_user(message):
 def new_transfer(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
-
-        button_choice_user = types.KeyboardButton('Felhasználónév alapján')
-        button_choice_acc = types.KeyboardButton('Számlaszám alapján')
-
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        keyboard.add(button_choice_user)
-        keyboard.add(button_choice_acc)
-
-        sent_msg = globals.BOT.send_message(message.chat.id, text="Felhasználónév vagy számlaszám alapján szeretnél "
-                                                                  "utalni?", reply_markup=keyboard)
-        globals.BOT.register_next_step_handler(sent_msg, AccountController.new_transfer)
+        if message.text == '/new_transfer':
+            keyboard = globals.keyboard_maker(['Felhasználó alapján', 'Számlaszám alapján'])
+            sent_msg = globals.BOT.send_message(
+                message.chat.id,
+                text="Felhasználónév vagy számlaszám alapján szeretnél utalni?",
+                reply_markup=keyboard)
+            globals.BOT.register_next_step_handler(sent_msg, AccountController.new_transfer)
     else:
         globals.BOT.send_message(message.chat.id, globals.LONG_TEXTS['login_warning'])
 
@@ -81,19 +81,16 @@ def list_transfers(message):
 @globals.BOT.message_handler(commands=['manage_pockets'])
 def manage_pockets(message):
     set_chat_id(message.chat.id)
-    pass
+    if globals.LOGGED_IN:
+        AccountController.manage_pockets(message)
+    else:
+        globals.BOT.send_message(message.chat.id, "Nem vagy bejelentkezve. /login")
 
 
 @globals.BOT.message_handler(commands=['see_dough'])
 def see_dough(message):
     set_chat_id(message.chat.id)
-    pass
-
-
-@globals.BOT.message_handler(commands=['get_notifications'])
-def get_notifications(message):
-    set_chat_id(message.chat.id)
-    pass
+    globals.BOT.send_message(message.chat.id, "Egyenleged:\n--------------------\n" + str(globals.CURRENT_USER.balance))
 
 
 @globals.BOT.message_handler(commands=['get_stats'])

@@ -1,11 +1,10 @@
-import time
 from datetime import datetime
 
 from models.balance import Balance
 from models.user import User
 import bcrypt
 
-from utils.globals import DB_CURSOR, DB_CONN
+from utils import globals
 
 
 def get_hashed_password(plain_text_password):
@@ -15,11 +14,11 @@ def get_hashed_password(plain_text_password):
 
 class UserDao:
     @staticmethod
-    def insert_user(user: User):
+    def create_user(user: User):
         # user létrehozása
         stmt = "INSERT INTO users(username, first_name, last_name, password, account_num) VALUES(?, ?, ?, ?, ?)"
 
-        DB_CURSOR.execute(stmt, (
+        globals.DB_CURSOR.execute(stmt, (
             user.username,
             user.first_name,
             user.last_name,
@@ -27,14 +26,14 @@ class UserDao:
             user.account_num
         ))
 
-        DB_CONN.commit()
+        globals.DB_CONN.commit()
 
         # balance létrehozása default zsebbel
-        user_id_in_db = DB_CURSOR.execute("SELECT user_id from users where username = ?",
+        user_id_in_db = globals.DB_CURSOR.execute("SELECT user_id from users where username = ?",
                                           (user.username,)).fetchone()[0]
         stmt = "INSERT INTO balances(user_id, pocket_name, balance) VALUES(?, 'default', 10000)"
-        DB_CURSOR.execute(stmt, (user_id_in_db,))
-        DB_CONN.commit()
+        globals.DB_CURSOR.execute(stmt, (user_id_in_db,))
+        globals.DB_CONN.commit()
 
     @staticmethod
     def get_user_by(user_id: int = None, username: str = None, account_num: str = None):
@@ -46,13 +45,13 @@ class UserDao:
 
         if user_id is not None:
             stmt += "user_id = ?"
-            res = DB_CURSOR.execute(stmt, (user_id,))
+            res = globals.DB_CURSOR.execute(stmt, (user_id,))
         elif username is not None:
             stmt += "username = ?"
-            res = DB_CURSOR.execute(stmt, (username,))
+            res = globals.DB_CURSOR.execute(stmt, (username,))
         elif account_num is not None:
             stmt += "account_num = ?"
-            res = DB_CURSOR.execute(stmt, (account_num,))
+            res = globals.DB_CURSOR.execute(stmt, (account_num,))
 
         result = res.fetchone()
         if result is not None:
@@ -70,7 +69,7 @@ class AccountDao:
     def get_balance_by_user_id(user_id):
         stmt = "SELECT * FROM balances WHERE user_id = ?"
 
-        res = DB_CURSOR.execute(stmt, (user_id,))
+        res = globals.DB_CURSOR.execute(stmt, (user_id,))
         result = res.fetchall()
 
         pockets = {}
@@ -90,23 +89,23 @@ class AccountDao:
         if pocket_name is None:
             # ha nincs megadva a zseb neve, akkor kiválasztjuk az elsőt, és azt módosítjuk
             stmt = 'SELECT pocket_name FROM balances WHERE user_id = ?'
-            res = DB_CURSOR.execute(stmt, (user_id,))
+            res = globals.DB_CURSOR.execute(stmt, (user_id,))
             pocket_name = res.fetchone()[0]
 
         stmt = 'SELECT balance from balances WHERE user_id = ? AND pocket_name = ?'
-        DB_CURSOR.execute(stmt, (user_id, pocket_name))
-        balance = DB_CURSOR.fetchone()[0]
+        globals.DB_CURSOR.execute(stmt, (user_id, pocket_name))
+        balance = globals.DB_CURSOR.fetchone()[0]
 
         stmt = 'UPDATE balances SET balance = ? WHERE user_id = ? and pocket_name = ?'
-        DB_CURSOR.execute(stmt, ((balance + amount), user_id, pocket_name))
+        globals.DB_CURSOR.execute(stmt, ((balance + amount), user_id, pocket_name))
 
-        DB_CONN.commit()
+        globals.DB_CONN.commit()
 
     @staticmethod
     def log_transfer(sender_id, beneficiary, amount):
         stmt = "INSERT INTO transfers(sender_id, receiver_id, amount, timestamp) VALUES(?, ?, ?, ?)"
-        DB_CURSOR.execute(stmt, (sender_id, beneficiary, amount, datetime.now()))
-        DB_CONN.commit()
+        globals.DB_CURSOR.execute(stmt, (sender_id, beneficiary, amount, datetime.now()))
+        globals.DB_CONN.commit()
 
     @staticmethod
     def list_transfers(user_id):
@@ -122,21 +121,33 @@ class AccountDao:
             WHERE t.sender_id = ? or t.receiver_id = ?
             """
 
-        DB_CURSOR.execute(stmt, (user_id, user_id))
-        result = DB_CURSOR.fetchall()
+        globals.DB_CURSOR.execute(stmt, (user_id, user_id))
+        result = globals.DB_CURSOR.fetchall()
 
         res_str = "Tranzakcióid:\n"
 
         from utils.globals import number_formatter
 
+
         for row in result:
             (timestamp, s_user_id, sender_username, sender_first_name, sender_last_name,
              r_user_id, rec_username, rec_first_name, rec_last_name, amount) = row
+            emoji = '↗' if s_user_id != user_id else '↘'
+            tipus = "Bejövő" if s_user_id != user_id else "Kimenő"
 
             res_str += "---------------------\n"
+            res_str += f"<b>Típus:</b> {tipus}{emoji}\n"
             res_str += f"<b>Időpont:</b> {timestamp}\n"
             res_str += f"<b>Küldő:</b> {'Te' if s_user_id == user_id else sender_username}\n"
             res_str += f"<b>Küldő:</b> {'Te' if r_user_id == user_id else rec_username}\n"
             res_str += f"<b>Összeg:</b> {number_formatter(amount)} HUF\n"
 
         return res_str
+
+    @staticmethod
+    def insert_pocket(name: str):
+        print("insert pocket: ", globals.CURRENT_USER.user_id)
+        sql = f"INSERT INTO balances(user_id, pocket_name) VALUES(?,?)"
+        globals.DB_CURSOR.execute(sql, (globals.CURRENT_USER.user_id, name))
+
+        globals.DB_CONN.commit()
