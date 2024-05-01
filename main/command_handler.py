@@ -1,5 +1,5 @@
 from utils import globals
-from main.convo_handler import UserHandler, AccountHandler
+from main.convo_handler import UserHandler, AccountHandler, TransferHandler
 
 
 def set_chat_id(chat_id):
@@ -62,12 +62,15 @@ def new_transfer(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
         if message.text == '/new_transfer':
-            keyboard = globals.keyboard_maker(['Felhasználó alapján', 'Számlaszám alapján'])
+            keyboard = globals.keyboard_maker([
+                globals.ButtonTexts.TRANSFER_BY_USER,
+                globals.ButtonTexts.TRANSFER_BY_ACCOUNT_NUM
+            ])
             sent_msg = globals.BOT.send_message(
                 message.chat.id,
                 text="Felhasználónév vagy számlaszám alapján szeretnél utalni?",
                 reply_markup=keyboard)
-            globals.BOT.register_next_step_handler(sent_msg, AccountHandler.new_transfer)
+            globals.BOT.register_next_step_handler(sent_msg, TransferHandler.new_transfer)
     else:
         globals.BOT.send_message(message.chat.id, globals.LONG_TEXTS['login_warning'])
 
@@ -76,7 +79,7 @@ def new_transfer(message):
 def list_transfers(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
-        AccountHandler.list_transfers(message)
+        TransferHandler.list_transfers(message)
     else:
         globals.BOT.send_message(message.chat.id, "Nem vagy bejelentkezve. /login")
 

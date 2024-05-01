@@ -15,7 +15,7 @@ def get_hashed_password(plain_text_password):
 class UserDao:
     @staticmethod
     def create_user(user: User):
-        # user létrehozása
+        # user létrehozása a db-ben
         stmt = "INSERT INTO users(username, first_name, last_name, password, account_num) VALUES(?, ?, ?, ?, ?)"
 
         globals.DB_CURSOR.execute(stmt, (
@@ -29,8 +29,9 @@ class UserDao:
         globals.DB_CONN.commit()
 
         # balance létrehozása default zsebbel
-        user_id_in_db = globals.DB_CURSOR.execute("SELECT user_id from users where username = ?",
-                                                  (user.username,)).fetchone()[0]
+        stmt = "SELECT user_id from users where username = ?"
+        user_id_in_db = globals.DB_CURSOR.execute(stmt, (user.username,)).fetchone()[0]
+
         stmt = "INSERT INTO balances(user_id, pocket_name, balance) VALUES(?, 'default', 10000)"
         globals.DB_CURSOR.execute(stmt, (user_id_in_db,))
         globals.DB_CONN.commit()
@@ -64,8 +65,6 @@ class UserDao:
         return user
 
 
-
-
 class BalanceDao:
     @staticmethod
     def get_balance_by_user_id(user_id):
@@ -86,22 +85,6 @@ class BalanceDao:
 
         return balance
 
-    @staticmethod
-    def change_balance_by_user(user_id, pocket_name: str = None, amount: int = 0):
-        if pocket_name is None:
-            # ha nincs megadva a zseb neve, akkor kiválasztjuk az elsőt, és azt módosítjuk
-            stmt = 'SELECT pocket_name FROM balances WHERE user_id = ?'
-            res = globals.DB_CURSOR.execute(stmt, (user_id,))
-            pocket_name = res.fetchone()[0]
-
-        stmt = 'SELECT balance from balances WHERE user_id = ? AND pocket_name = ?'
-        globals.DB_CURSOR.execute(stmt, (user_id, pocket_name))
-        balance = globals.DB_CURSOR.fetchone()[0]
-
-        stmt = 'UPDATE balances SET balance = ? WHERE user_id = ? and pocket_name = ?'
-        globals.DB_CURSOR.execute(stmt, ((balance + amount), user_id, pocket_name))
-
-        globals.DB_CONN.commit()
 
     @staticmethod
     def log_transfer(sender_id, beneficiary, amount):
@@ -146,20 +129,81 @@ class BalanceDao:
         return res_str
 
     @staticmethod
-    def insert_pocket(name: str):
-        print("insert pocket: ", globals.CURRENT_USER.user_id)
+    def insert_pocket(user: User, pocket_name: str):
+        # helyi
+        pockets = user.balance.pockets
+        if len(pockets.keys()) == 4:
+            raise IOError('Felhasználónként csak 4 zseb lehet.')
+        elif pocket_name in pockets.keys():
+            raise ValueError('Van már ilyen nevű zseb.')
+        else:
+            # helyi
+            pockets[pocket_name] = 0
+
+        # db
         sql = "INSERT INTO balances(user_id, pocket_name) VALUES(?,?)"
-        globals.DB_CURSOR.execute(sql, (globals.CURRENT_USER.user_id, name))
+        globals.DB_CURSOR.execute(sql, (user.user_id, pocket_name))
 
         globals.DB_CONN.commit()
 
     @staticmethod
-    def remove_pocket(pocket_name):
-        pass
+    def rename_pocket(user: User, old_pocket_name, new_pocket_name):
+        # helyi
+        pockets = user.balance.pockets
+        if old_pocket_name not in pockets.keys():
+            raise IOError('Nincs ilyen nevű zseb!')
+        elif new_pocket_name in pockets.keys():
+            raise IOError('Van már ilyen nevű zseb!')
+        else:
+            amount = pockets[old_pocket_name]
+            del pockets[old_pocket_name]
+            pockets[new_pocket_name] = amount
 
-    @staticmethod
-    def rename_pocket(user_id, old_name, new_name):
+        # db
         sql = 'UPDATE balances SET pocket_name = ? WHERE pocket_name = ? AND user_id = ?'
 
-        globals.DB_CURSOR.execute(sql, (new_name, old_name, user_id))
+        globals.DB_CURSOR.execute(sql, (new_pocket_name, old_pocket_name, user.user_id))
         globals.DB_CONN.commit()
+
+    @staticmethod
+    def change_balance(user: User, pocket_name: str = None, amount: int = 0, nullify: bool = False):
+        pockets = user.balance.pockets
+
+        # ha nincs megadva a zseb neve, akkor kiválasztjuk az elsőt, és azt módosítjuk
+        if pocket_name is None:
+            # helyi -> első zseb neve
+            default_pocket = list(pockets.keys())[0]
+            pockets[default_pocket] += amount
+
+            # db -> user első rekordjának a zsebének a neve
+            stmt = 'SELECT pocket_name FROM balances WHERE user_id = ?'
+            res = globals.DB_CURSOR.execute(stmt, (user.user_id,))
+            pocket_name = res.fetchone()[0]
+
+        elif pocket_name not in pockets.keys():
+            raise IOError('Nincs ilyen nevű zseb.')
+
+        if nullify:
+            stmt = 'UPDATE balances SET balance = 0 WHERE user_id = ? and pocket_name = ?'
+            globals.DB_CURSOR.execute(stmt, (user.user_id, pocket_name))
+        else:
+            stmt = 'UPDATE balances SET balance = balance + ? WHERE user_id = ? and pocket_name = ?'
+            globals.DB_CURSOR.execute(stmt, (amount, user.user_id, pocket_name))
+
+        globals.DB_CONN.commit()
+
+    @staticmethod
+    def remove_pocket(user: User, pocket_name):
+        pockets = user.balance.pockets
+        if pocket_name not in pockets.keys():
+            raise IOError('Nincs ilyen nevű zseb.')
+        elif pockets[pocket_name] != 0:
+            raise Exception('Ez a zseb nem üres.')
+        else:
+            # helyi
+            del pockets[pocket_name]
+            # db
+            sql = "DELETE FROM balances WHERE pocket_name = ? and user_id = ?"
+            globals.DB_CURSOR.execute(sql, (pocket_name, user.user_id))
+            globals.DB_CONN.commit()
+

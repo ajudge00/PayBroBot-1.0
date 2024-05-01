@@ -96,25 +96,26 @@ class AccountHandler:
 
             # Max. 4 zseb lehet
             if len(pockets.keys()) != 4:
-                choices.append('Új zseb létrehozása')
+                choices.append(globals.ButtonTexts.NEW_POCKET)
 
             # Min. 1 zsebnek lennie kell
             if len(pockets.keys()) != 1:
-                choices.append('Zseb törlése')
+                choices.append(globals.ButtonTexts.REMOVE_POCKET)
 
-            choices.append('Meglévő zseb módosítása')
+            choices.append(globals.ButtonTexts.MODIFY_POCKET)
             keyboard = globals.keyboard_maker(choices)
+            print(isinstance(globals.ButtonTexts.MODIFY_POCKET, str))
 
             state = "action_provided"
             sent_msg = globals.BOT.send_message(message.chat.id, text="Válassz!", reply_markup=keyboard)
             globals.BOT.register_next_step_handler(sent_msg, AccountHandler.manage_pockets)
 
         elif state == "action_provided":
-            if message.text == "Új zseb létrehozása":
+            if message.text == globals.ButtonTexts.NEW_POCKET:
                 sent_msg = globals.BOT.send_message(message.chat.id, "Mi legyen az új zseb neve?")
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.new_pocket)
 
-            elif message.text == "Zseb törlése":
+            elif message.text == globals.ButtonTexts.REMOVE_POCKET:
                 choices = []
 
                 for pocket, balance in pockets.items():
@@ -131,8 +132,11 @@ class AccountHandler:
                 globals.BOT.register_next_step_handler(
                     sent_msg,
                     AccountHandler.delete_pocket)
-            elif message.text == "Meglévő zseb módosítása":
-                keyboard = globals.keyboard_maker(["Zseb átnevezése", "Egyenlegmozgatás zsebek között"])
+            elif message.text == globals.ButtonTexts.MODIFY_POCKET:
+                keyboard = globals.keyboard_maker([
+                    globals.ButtonTexts.RENAME_POCKET,
+                    globals.ButtonTexts.TRANSFER_BETWEEN_POCKETS
+                ])
 
                 sent_msg = globals.BOT.send_message(
                     message.chat.id,
@@ -149,8 +153,7 @@ class AccountHandler:
         new_pocket_name = message.text.strip()
 
         if new_pocket_name not in pockets.keys():
-            # TODO EZ CSAK A DB-N VÁLTOZTAK, OBJ-N NEM!
-            BalanceDao.insert_pocket(new_pocket_name)
+            BalanceDao.insert_pocket(globals.CURRENT_USER, new_pocket_name)
         else:
             sent_msg = globals.BOT.send_message(message.chat.id, "Ilyen nevű zseb már létezik!")
             state = ""
@@ -181,7 +184,8 @@ class AccountHandler:
                 state = "to_transfer_to_for_delete_provided"
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.delete_pocket, tmp=pocket_to_delete)
             else:
-                globals.CURRENT_USER.balance.remove_pocket(pocket_to_delete)
+                # globals.CURRENT_USER.balance.remove_pocket(pocket_to_delete)
+                BalanceDao.remove_pocket(pocket_to_delete)
                 globals.BOT.send_message(
                     message.chat.id,
                     "Zseb törlése sikeres!\n" +
@@ -190,9 +194,11 @@ class AccountHandler:
         elif state == "to_transfer_to_for_delete_provided":
             pocket_to_delete = tmp
             pocket_to_transfer_to = message.text.split('-')[0].strip()
-            globals.CURRENT_USER.balance.change_balance(pocket_to_transfer_to, pockets[pocket_to_delete])
-            # TODO a change balance nem változtat a db-n, csak az objektumon
-            globals.CURRENT_USER.balance.remove_pocket(pocket_to_delete)
+            # globals.CURRENT_USER.balance.change_balance(pocket_to_transfer_to, pockets[pocket_to_delete])
+            BalanceDao.change_balance(globals.CURRENT_USER, pocket_to_transfer_to, pockets[pocket_to_delete])
+            BalanceDao.change_balance(globals.CURRENT_USER, pocket_to_delete, nullify=True)
+            # globals.CURRENT_USER.balance.remove_pocket(pocket_to_delete)
+            BalanceDao.remove_pocket(globals.CURRENT_USER, pocket_to_delete)
 
             globals.BOT.send_message(
                 message.chat.id,
@@ -200,14 +206,15 @@ class AccountHandler:
                 globals.CURRENT_USER.balance
             )
 
+            state = ""
+
     @staticmethod
     def modify_pocket(message):
         global state
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
-        print("modify pocket called")
 
         if state == "":
-            if message.text == "Zseb átnevezése":
+            if message.text == globals.ButtonTexts.RENAME_POCKET:
                 sent_msg = globals.BOT.send_message(
                     message.chat.id,
                     "Kérlek add meg az átnevezendő zseb nevét és az új nevet, <b>vesszővel elválasztva</b>!",
@@ -216,7 +223,7 @@ class AccountHandler:
 
                 state = "to_rename_provided"
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
-            elif message.text == "Egyenletmozgatás zsebek között":
+            elif message.text == globals.ButtonTexts.TRANSFER_BETWEEN_POCKETS:
                 sent_msg = globals.BOT.send_message(
                     message.chat.id,
                     "Add meg, melyik zsebből, melyikbe, és mennyit szeretnél átmozgatni.\n"
@@ -233,7 +240,8 @@ class AccountHandler:
                 sent_msg = globals.BOT.send_message(message.chat.id, "Van már ilyen nevű zseb!")
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
             else:
-                globals.CURRENT_USER.balance.rename_pocket(to_rename, new_name)
+                # globals.CURRENT_USER.balance.rename_pocket(to_rename, new_name)
+                BalanceDao.rename_pocket(globals.CURRENT_USER, to_rename, new_name)
 
         elif state == "from_to_amount_provided":
             if len(message.text.split(",")):
@@ -264,9 +272,13 @@ class AccountHandler:
                     )
                     globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
                 else:
-                    globals.CURRENT_USER.balance.change_balance(from_pocket, -1 * amount)
-                    globals.CURRENT_USER.balance.change_balance(to_pocket, amount)
+                    # globals.CURRENT_USER.balance.change_balance(from_pocket, -1 * amount)
+                    BalanceDao.change_balance(globals.CURRENT_USER, from_pocket, -1 * amount)
+                    # globals.CURRENT_USER.balance.change_balance(to_pocket, amount)
+                    BalanceDao.change_balance(globals.CURRENT_USER, to_pocket, amount)
                     globals.BOT.send_message(message.chat.id, "Egyenlegmozgatás sikeres.")
+
+                    state = ""
 
 
 class TransferHandler:
@@ -275,13 +287,14 @@ class TransferHandler:
         global state
 
         if state == "":
-            sent_msg = ""
-            if message.text == "Felhasználónév alapján":
+            if message.text == globals.ButtonTexts.TRANSFER_BY_USER:
                 sent_msg = globals.BOT.send_message(message.chat.id, "Kérlek add meg a felhasználónevet!")
                 state = "user_provided"
-            elif message.text == "Számlaszám alapján":
+            elif message.text == globals.ButtonTexts.TRANSFER_BY_ACCOUNT_NUM:
                 sent_msg = globals.BOT.send_message(message.chat.id, "Kérlek add meg a számlaszámot!")
                 state = "account_provided"
+            else:
+                sent_msg = globals.BOT.send_message(message.chat.id, "Ezt nem értettem...")
 
             globals.BOT.register_next_step_handler(sent_msg, TransferHandler.new_transfer)
         elif state == "user_provided" or state == "account_provided":
@@ -319,8 +332,8 @@ class TransferHandler:
             elif amount > globals.CURRENT_USER.balance.get_pocket_balance(pocket):
                 globals.BOT.send_message(message.chat.id, "Nincs elég fedezet a választott zsebben. /new_transfer")
             else:
-                BalanceDao.change_balance_by_user(beneficiary.user_id, amount=amount)
-                BalanceDao.change_balance_by_user(globals.CURRENT_USER.user_id, pocket_name=pocket, amount=-amount)
+                BalanceDao.change_balance(beneficiary, amount=amount)
+                BalanceDao.change_balance(globals.CURRENT_USER, pocket_name=pocket, amount=-amount)
                 BalanceDao.log_transfer(sender_id=globals.CURRENT_USER.user_id, beneficiary=beneficiary.user_id,
                                         amount=amount)
 

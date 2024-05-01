@@ -1,22 +1,18 @@
 import os
 import sqlite3
+from enum import Enum
 from typing import Final
 import telebot
 import json
 from telebot import types
-
-
+from utils import dao
 
 TOKEN: Final = open("token.txt", 'r').read()
-
 BOT: Final = telebot.TeleBot(TOKEN)
-
-long_texts_path = os.path.join(os.path.dirname(__file__), 'long_texts.json')
-LONG_TEXTS: Final = json.load(open(long_texts_path, "r", encoding="utf-8"))
+LONG_TEXTS: Final = json.load(open("utils/long_texts.json", "r", encoding="utf-8"))
 
 DB_CONN: Final = sqlite3.connect("database.db", check_same_thread=False)
 DB_CURSOR: Final = DB_CONN.cursor()
-
 
 # SESSION
 LOGGED_IN = False
@@ -24,16 +20,14 @@ CURRENT_USER = None
 CHAT_ID = -1
 
 try:
-    from utils import dao
     session_dump = json.load(open("session_dump.json", "r", encoding="utf-8"))
-
     user = dao.UserDao.get_user_by(user_id=session_dump['user_id'])
 
     LOGGED_IN = True
     CURRENT_USER = user
     CHAT_ID = session_dump['chat_id']
 
-    print(f"CHAT_ID: {CHAT_ID}\nLOGGED_IN: {LOGGED_IN}\nCURRENT_USER: {CURRENT_USER.user_id} {CURRENT_USER.username}")
+    print(f"CHAT_ID: {CHAT_ID}\nLOGGED_IN: {LOGGED_IN}\nCURRENT_USER: [{CURRENT_USER.user_id}] {CURRENT_USER.username}")
 except FileNotFoundError:
     print("no session, i guess")
 
@@ -54,3 +48,13 @@ def keyboard_maker(choices: list) -> types.ReplyKeyboardMarkup:
 
     return keyboard
 
+
+class ButtonTexts(str, Enum):
+    TRANSFER_BY_USER = 'Felhasználónév alapján'
+    TRANSFER_BY_ACCOUNT_NUM = 'Számlaszám alapján'
+
+    NEW_POCKET = 'Új zseb létrehozása'
+    REMOVE_POCKET = "Zseb törlése"
+    MODIFY_POCKET = "Meglévő zseb módosítása"
+    RENAME_POCKET = "Zseb átnevezése"
+    TRANSFER_BETWEEN_POCKETS = "Egyenletmozgatás zsebek között"
