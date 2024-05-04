@@ -16,7 +16,7 @@ def check_password(plain_text_password, hashed_password):
     return bcrypt.checkpw(plain_text_password, hashed_password)
 
 
-state = ""
+STATE = ""
 
 
 class UserHandler:
@@ -71,7 +71,9 @@ class UserHandler:
                     message.chat.id,
                     "Helytelen jelszó. Próbáld újra. Vagy /cancel a kilépéshez.")
         except IndexError:
-            globals.BOT.send_message(message.chat.id, "Az adataid <b>vesszővel elválasztva add meg</b>!")
+            globals.BOT.send_message(
+                message.chat.id,
+                "Az adataid <b>vesszővel elválasztva add meg</b>!", parse_mode="HTML")
 
     @staticmethod
     def logout_user(message):
@@ -88,10 +90,10 @@ class UserHandler:
 class AccountHandler:
     @staticmethod
     def manage_pockets(message):
-        global state
+        global STATE
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
 
-        if state == "":
+        if STATE == "":
             choices = []
 
             # Max. 4 zseb lehet
@@ -106,11 +108,11 @@ class AccountHandler:
             keyboard = globals.keyboard_maker(choices)
             print(isinstance(globals.ButtonTexts.MODIFY_POCKET, str))
 
-            state = "action_provided"
+            STATE = "action_provided"
             sent_msg = globals.BOT.send_message(message.chat.id, text="Válassz!", reply_markup=keyboard)
             globals.BOT.register_next_step_handler(sent_msg, AccountHandler.manage_pockets)
 
-        elif state == "action_provided":
+        elif STATE == "action_provided":
             if message.text == globals.ButtonTexts.NEW_POCKET:
                 sent_msg = globals.BOT.send_message(message.chat.id, "Mi legyen az új zseb neve?")
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.new_pocket)
@@ -125,7 +127,7 @@ class AccountHandler:
 
                 sent_msg = globals.BOT.send_message(
                     message.chat.id,
-                    f"Kérlek válaszd ki a törlendő zsebet!\n",
+                    "Kérlek válaszd ki a törlendő zsebet!\n",
                     reply_markup=keyboard
                 )
 
@@ -143,12 +145,12 @@ class AccountHandler:
                     "Válaszd ki, mit szeretnél tenni!",
                     reply_markup=keyboard
                 )
-                state = ""
+                STATE = ""
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
 
     @staticmethod
     def new_pocket(message):
-        global state
+        global STATE
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
         new_pocket_name = message.text.strip()
 
@@ -156,22 +158,23 @@ class AccountHandler:
             BalanceDao.insert_pocket(globals.CURRENT_USER, new_pocket_name)
         else:
             sent_msg = globals.BOT.send_message(message.chat.id, "Ilyen nevű zseb már létezik!")
-            state = ""
+            STATE = ""
             globals.BOT.register_next_step_handler(sent_msg, AccountHandler.manage_pockets)
 
     @staticmethod
     def delete_pocket(message, tmp=None):
-        global state
+        global STATE
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
         pocket_to_delete = message.text.split('-')[0].strip()
 
-        if state == "":
+        if STATE == "":
             if pockets[pocket_to_delete] != 0:
                 choices = []
 
                 for pocket, balance in pockets.items():
                     if pocket != pocket_to_delete:
-                        choices.append(pocket + " - " + str(globals.number_formatter(balance)) + " HUF")
+                        choices.append(pocket + " - " +
+                                       str(globals.number_formatter(balance)) + " HUF")
 
                 keyboard = globals.keyboard_maker(choices)
 
@@ -181,7 +184,7 @@ class AccountHandler:
                     reply_markup=keyboard
                 )
 
-                state = "to_transfer_to_for_delete_provided"
+                STATE = "to_transfer_to_for_delete_provided"
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.delete_pocket, tmp=pocket_to_delete)
             else:
                 # globals.CURRENT_USER.balance.remove_pocket(pocket_to_delete)
@@ -191,7 +194,7 @@ class AccountHandler:
                     "Zseb törlése sikeres!\n" +
                     globals.CURRENT_USER.balance
                 )
-        elif state == "to_transfer_to_for_delete_provided":
+        elif STATE == "to_transfer_to_for_delete_provided":
             pocket_to_delete = tmp
             pocket_to_transfer_to = message.text.split('-')[0].strip()
             # globals.CURRENT_USER.balance.change_balance(pocket_to_transfer_to, pockets[pocket_to_delete])
@@ -206,14 +209,14 @@ class AccountHandler:
                 globals.CURRENT_USER.balance
             )
 
-            state = ""
+            STATE = ""
 
     @staticmethod
     def modify_pocket(message):
-        global state
+        global STATE
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
 
-        if state == "":
+        if STATE == "":
             if message.text == globals.ButtonTexts.RENAME_POCKET:
                 sent_msg = globals.BOT.send_message(
                     message.chat.id,
@@ -221,7 +224,7 @@ class AccountHandler:
                     parse_mode="HTML"
                 )
 
-                state = "to_rename_provided"
+                STATE = "to_rename_provided"
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
             elif message.text == globals.ButtonTexts.TRANSFER_BETWEEN_POCKETS:
                 sent_msg = globals.BOT.send_message(
@@ -229,10 +232,10 @@ class AccountHandler:
                     "Add meg, melyik zsebből, melyikbe, és mennyit szeretnél átmozgatni.\n"
                     "Pl. lakás, autó, 100000"
                 )
-                state = "from_to_amount_provided"
+                STATE = "from_to_amount_provided"
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
 
-        elif state == "to_rename_provided":
+        elif STATE == "to_rename_provided":
             to_rename = message.text.split(",")[0].strip()
             new_name = message.text.split(",")[1].strip()
 
@@ -243,7 +246,7 @@ class AccountHandler:
                 # globals.CURRENT_USER.balance.rename_pocket(to_rename, new_name)
                 BalanceDao.rename_pocket(globals.CURRENT_USER, to_rename, new_name)
 
-        elif state == "from_to_amount_provided":
+        elif STATE == "from_to_amount_provided":
             if len(message.text.split(",")):
                 sent_msg = globals.BOT.send_message(message.chat.id, "Nem jó formátumot használtál!")
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
@@ -278,29 +281,31 @@ class AccountHandler:
                     BalanceDao.change_balance(globals.CURRENT_USER, to_pocket, amount)
                     globals.BOT.send_message(message.chat.id, "Egyenlegmozgatás sikeres.")
 
-                    state = ""
+                    STATE = ""
 
 
 class TransferHandler:
     @staticmethod
     def new_transfer(message, beneficiary: User = None):
-        global state
+        global STATE
 
-        if state == "":
+        if STATE == "":
             if message.text == globals.ButtonTexts.TRANSFER_BY_USER:
-                sent_msg = globals.BOT.send_message(message.chat.id, "Kérlek add meg a felhasználónevet!")
-                state = "user_provided"
+                sent_msg = globals.BOT.send_message(message.chat.id,
+                                                    "Kérlek add meg a felhasználónevet!")
+                STATE = "user_provided"
             elif message.text == globals.ButtonTexts.TRANSFER_BY_ACCOUNT_NUM:
-                sent_msg = globals.BOT.send_message(message.chat.id, "Kérlek add meg a számlaszámot!")
-                state = "account_provided"
+                sent_msg = globals.BOT.send_message(message.chat.id,
+                                                    "Kérlek add meg a számlaszámot!")
+                STATE = "account_provided"
             else:
                 sent_msg = globals.BOT.send_message(message.chat.id, "Ezt nem értettem...")
 
             globals.BOT.register_next_step_handler(sent_msg, TransferHandler.new_transfer)
-        elif state == "user_provided" or state == "account_provided":
+        elif STATE == "user_provided" or STATE == "account_provided":
             user_to_transfer_to = message.text.strip()
 
-            if state == "user_provided":
+            if STATE == "user_provided":
                 beneficiary = UserDao.get_user_by(username=user_to_transfer_to)
             else:
                 beneficiary = UserDao.get_user_by(account_num=user_to_transfer_to)
@@ -313,14 +318,15 @@ class TransferHandler:
 
                     sent_msg = globals.BOT.send_message(
                         message.chat.id,
-                        globals.LONG_TEXTS['transfer_pocket_amount'] + str(balance),
+                        globals.LONG_TEXTS['transfer_pocket_amount'] +
+                        str(balance),
                         parse_mode='HTML')
 
-                    state = "pocket_amount_provided"
+                    STATE = "pocket_amount_provided"
                     globals.BOT.register_next_step_handler(sent_msg, TransferHandler.new_transfer, beneficiary)
             else:
                 globals.BOT.send_message(message.chat.id, "Ilyen felhasználó nem létezik. Próbáld újra. /new_transfer")
-        elif state == "pocket_amount_provided":
+        elif STATE == "pocket_amount_provided":
             data = message.text.split(',')
             pocket = data[0].strip()
             amount = int(data[1].strip())
@@ -343,7 +349,7 @@ class TransferHandler:
                     "Sikeres átutalás!\n\nÚj egyenleged:\n--------------------\n"
                     + str(balance))
 
-        state = ""
+        STATE = ""
 
     @staticmethod
     def list_transfers(message):

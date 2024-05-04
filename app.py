@@ -1,6 +1,6 @@
+import json
 from utils.globals import BOT
 from main import command_handler
-import json
 
 if __name__ == '__main__':
     BOT.polling()
@@ -9,7 +9,7 @@ if __name__ == '__main__':
     print(f"Leállítás...\nLOGGED_IN = {LOGGED_IN}\nCHAT_ID = {CHAT_ID}")
 
     if LOGGED_IN:
-        with open("session_dump.json", "w") as f:
+        with open("session_dump.json", "w", encoding='utf-8') as f:
             session_info = {
                     "chat_id": CHAT_ID,
                     "user_id": CURRENT_USER.user_id

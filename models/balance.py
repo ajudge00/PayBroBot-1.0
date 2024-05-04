@@ -28,6 +28,5 @@ class Balance:
 
     def get_pocket_balance(self, pocket_name: str) -> int:
         if pocket_name not in self.pockets.keys():
-            raise IOError('Pocket with this name does not exist')
-        else:
-            return self.pockets[pocket_name]
+            raise IOError('Nincs ilyen nevű pocket')
+        return self.pockets[pocket_name]

@@ -24,7 +24,8 @@ def start_help(message):
     if globals.LOGGED_IN:
         globals.BOT.send_message(message.chat.id, text + globals.LONG_TEXTS['help_text_logged_in'])
     else:
-        globals.BOT.send_message(message.chat.id, text + globals.LONG_TEXTS['help_text_not_logged_in'])
+        globals.BOT.send_message(message.chat.id,
+                                 text + globals.LONG_TEXTS['help_text_not_logged_in'])
 
 
 @globals.BOT.message_handler(commands=['login'])
@@ -53,7 +54,8 @@ def logout(message):
 @globals.BOT.message_handler(commands=['new_user'])
 def new_user(message):
     set_chat_id(message.chat.id)
-    sent_msg = globals.BOT.send_message(message.chat.id, globals.LONG_TEXTS['new_user_text'], parse_mode='HTML')
+    sent_msg = globals.BOT.send_message(message.chat.id,
+                                        globals.LONG_TEXTS['new_user_text'], parse_mode='HTML')
     globals.BOT.register_next_step_handler(sent_msg, UserHandler.create_user)
 
 
@@ -106,4 +108,3 @@ def see_dough(message):
 @globals.BOT.message_handler(commands=['get_stats'])
 def get_stats(message):
     set_chat_id(message.chat.id)
-    pass
