@@ -201,6 +201,7 @@ class BalanceDao:
             raise Exception('Ez a zseb nem üres.')
         else:
             # helyi
+            print("REMOVE POCKET C      ALLED")
             del pockets[pocket_name]
             # db
             sql = "DELETE FROM balances WHERE pocket_name = ? and user_id = ?"

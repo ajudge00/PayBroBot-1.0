@@ -32,7 +32,7 @@ def start_help(message):
 def login(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
-        globals.BOT.send_message(message.chat.id, "Már be vagyy jelentkezve. /logout")
+        globals.BOT.send_message(message.chat.id, "Már be vagy jelentkezve. Kijelentkezés: /logout")
     else:
         sent_msg = globals.BOT.send_message(
             message.chat.id,

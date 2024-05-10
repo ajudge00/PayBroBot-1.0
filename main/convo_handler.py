@@ -147,6 +147,8 @@ class AccountHandler:
                 )
                 STATE = ""
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.modify_pocket)
+        else:
+            print("valami lett a state-tel")
 
     @staticmethod
     def new_pocket(message):
@@ -188,7 +190,7 @@ class AccountHandler:
                 globals.BOT.register_next_step_handler(sent_msg, AccountHandler.delete_pocket, tmp=pocket_to_delete)
             else:
                 # globals.CURRENT_USER.balance.remove_pocket(pocket_to_delete)
-                BalanceDao.remove_pocket(pocket_to_delete)
+                BalanceDao.remove_pocket(globals.CURRENT_USER, pocket_to_delete)
                 globals.BOT.send_message(
                     message.chat.id,
                     "Zseb törlése sikeres!\n" +
