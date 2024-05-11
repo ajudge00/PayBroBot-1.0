@@ -24,6 +24,9 @@ STATE = ""
 class UserHandler:
     @staticmethod
     def create_user(message):
+        if message.text == "/cancel":
+            return
+
         creds = message.text.split(',')
         creds = [c.strip() for c in creds]
 
@@ -53,6 +56,9 @@ class UserHandler:
 
     @staticmethod
     def login(message):
+        if message.text == "/cancel":
+            return
+
         try:
             creds = message.text.split(',')
             provided_username = creds[0].strip()
@@ -93,7 +99,12 @@ class AccountHandler:
     @staticmethod
     def manage_pockets(message):
         global STATE
+        if message.text == "/cancel":
+            STATE = ""
+            return
+
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
+
 
         if STATE == "":
             choices = []
@@ -158,7 +169,13 @@ class AccountHandler:
     @staticmethod
     def new_pocket(message):
         global STATE
+        if message.text == "/cancel":
+            STATE = ""
+            return
+
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
+
+
         new_pocket_name = message.text.strip()
 
         if new_pocket_name not in pockets.keys():
@@ -176,6 +193,10 @@ class AccountHandler:
     @staticmethod
     def delete_pocket(message, tmp=None):
         global STATE
+        if message.text == "/cancel":
+            STATE = ""
+            return
+
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
         pocket_to_delete = message.text.split('-')[0].strip()
 
@@ -231,6 +252,9 @@ class AccountHandler:
 
     @staticmethod
     def modify_pocket(message):
+        if message.text == "/cancel":
+            return
+
         if message.text == globals.ButtonTexts.RENAME_POCKET:
             sent_msg = globals.BOT.send_message(
                 message.chat.id,
@@ -249,6 +273,10 @@ class AccountHandler:
     @staticmethod
     def rename_pocket(message):
         global STATE
+        if message.text == "/cancel":
+            STATE = ""
+            return
+
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
 
         to_rename = message.text.split(",")[0].strip()
@@ -268,6 +296,9 @@ class AccountHandler:
 
     @staticmethod
     def transfer_between_pockets(message):
+        if message.text == "/cancel":
+            return
+
         pockets = globals.CURRENT_USER.balance.get_all_pockets()
 
         if len(message.text.split(",")) != 3:
@@ -299,11 +330,50 @@ class AccountHandler:
                 else:
                     globals.BOT.send_message(message.chat.id, "Valami bibi van...")
 
+    @staticmethod
+    def add_balance(message, amount=None):
+        global STATE
+        if message.text == "/cancel":
+            STATE = ""
+            return
+
+        pockets = globals.CURRENT_USER.balance.get_all_pockets()
+
+        if STATE == "":
+            try:
+                amount = int(message.text.strip())
+                choices = []
+
+                for pocket in pockets.keys():
+                    choices.append(pocket)
+
+                keyboard = globals.keyboard_maker(choices)
+
+                sent_msg = globals.BOT.send_message(
+                    message.chat.id,
+                    "Melyik zsebhez szeretnéd hozzáadni?",
+                    reply_markup=keyboard
+                )
+
+                STATE = "pocket_chosen"
+                globals.BOT.register_next_step_handler(sent_msg, AccountHandler.add_balance, amount=amount)
+            except ValueError:
+                globals.BOT.send_message(message.chat.id, "Nem számot adtál meg!")
+        elif STATE == "pocket_chosen":
+            pocket_name = message.text.strip()
+            if AccountDao.change_balance(globals.CURRENT_USER, pocket_name, amount):
+                globals.BOT.send_message(message.chat.id, "Összeg hozzáadása sikerült. /see_dough")
+            else:
+                globals.BOT.send_message(message.chat.id, "Valami nem jó...")
+
 
 class TransferHandler:
     @staticmethod
     def new_transfer(message, beneficiary: User = None):
         global STATE
+        if message.text == "/cancel":
+            STATE = ""
+            return
 
         if STATE == "":
             if message.text == globals.ButtonTexts.TRANSFER_BY_USER:
@@ -375,6 +445,9 @@ class TransferHandler:
     @staticmethod
     def list_transfers(message):
         global STATE
+        if message.text == "/cancel":
+            STATE = ""
+            return
 
         if STATE == "":
             choices = [ButtonTexts.ALL_TRANSFERS,

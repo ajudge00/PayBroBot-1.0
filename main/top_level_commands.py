@@ -17,7 +17,7 @@ def status(message):
         f"CURRENT_USER: {globals.CURRENT_USER.username if globals.LOGGED_IN else 'None'}")
 
 
-@globals.BOT.message_handler(commands=['start', 'help', 'cancel'])
+@globals.BOT.message_handler(commands=['start', 'help'])
 def start_help(message):
     set_chat_id(message.chat.id)
     text = "Üdvözöl a Fizess, Tesó!\n\n"
@@ -47,6 +47,16 @@ def logout(message):
     set_chat_id(message.chat.id)
     if globals.LOGGED_IN:
         UserHandler.logout_user(message)
+    else:
+        globals.BOT.send_message(message.chat.id, "Nem vagy bejelentkezve. /login")
+
+
+@globals.BOT.message_handler(commands=['add_balance'])
+def add_balance(message):
+    set_chat_id(message.chat.id)
+    if globals.LOGGED_IN:
+        sent_msg = globals.BOT.send_message(message.chat.id, "Milyen összeget szeretnél hozzáadni?")
+        globals.BOT.register_next_step_handler(sent_msg, AccountHandler.add_balance)
     else:
         globals.BOT.send_message(message.chat.id, "Nem vagy bejelentkezve. /login")
 
@@ -105,6 +115,3 @@ def see_dough(message):
     )
 
 
-@globals.BOT.message_handler(commands=['get_stats'])
-def get_stats(message):
-    set_chat_id(message.chat.id)

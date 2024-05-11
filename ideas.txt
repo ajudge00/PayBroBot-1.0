@@ -1,18 +1,11 @@
 Fake PayPal
-- new_account
-	user, password (encrypted), account_num (encrypted)
-	10000 coins when account created
-- login
-	user, password, 2fa
-- create_pocket
-	balance can be split up into up to 4 pockets
-- new_transfer
-	can transfer money to other users
-- list_transfers
-	can see a history of in- and outgoing transfers
-- see_dough
-	can see the current balance, split up by pockets, if any
-- get_notifications
-	an option to turn on, you get a message whenever someone transfers money to your account
-- get_stats
-	you can generate a diagram of your spendings/earnings by pockets and have it sent to you as an image
+- status
+- start, help
+login - Bejelentkezés
+logout - Kijelentkezés
+add_balance - Fedezet hozzáadása
+new_user - Regisztráció
+new_transfer - Új átutalás
+list_transfers - Tranzakciók
+manage_pockets - Zsebek kezelése
+see_dough - Egyenleg

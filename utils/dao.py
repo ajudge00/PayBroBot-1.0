@@ -13,11 +13,6 @@ def get_hashed_password(plain_text_password):
 
 
 class UserDao:
-    def __init__(self):
-        # TODO
-        conn = globals.DB_CONN
-        cur = globals.DB_CURSOR
-
     @staticmethod
     def create_user(user: User):
         # user létrehozása a db-ben
@@ -192,7 +187,7 @@ class AccountDao:
 
 class TransferDao:
     @staticmethod
-    def log_transfer(sender_id, beneficiary, amount):
+    def log_transfer(sender_id, beneficiary, amount) -> bool:
         try:
             stmt = "INSERT INTO transfers(sender_id, receiver_id, amount, timestamp) VALUES(?, ?, ?, ?)"
             globals.DB_CURSOR.execute(stmt, (sender_id, beneficiary, amount, datetime.now()))

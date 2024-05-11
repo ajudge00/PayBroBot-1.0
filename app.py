@@ -1,6 +1,6 @@
 import json
 from utils.globals import BOT
-from main import command_handler
+from main import top_level_commands
 
 if __name__ == '__main__':
     BOT.polling()
