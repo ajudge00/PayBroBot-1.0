@@ -58,3 +58,8 @@ class ButtonTexts(str, Enum):
     MODIFY_POCKET = "Meglévő zseb módosítása"
     RENAME_POCKET = "Zseb átnevezése"
     TRANSFER_BETWEEN_POCKETS = "Egyenletmozgatás zsebek között"
+
+    ONE_YEAR_ONWARDS = "Az utóbbi egy évben"
+    THIS_MONTH = "Ebben a hónapban"
+    THIS_WEEK = "Ezen a héten"
+    ALL_TRANSFERS = "Összes"

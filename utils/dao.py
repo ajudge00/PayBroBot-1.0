@@ -13,6 +13,11 @@ def get_hashed_password(plain_text_password):
 
 
 class UserDao:
+    def __init__(self):
+        # TODO
+        conn = globals.DB_CONN
+        cur = globals.DB_CURSOR
+
     @staticmethod
     def create_user(user: User):
         # user létrehozása a db-ben
@@ -57,7 +62,7 @@ class UserDao:
         result = res.fetchone()
         if result is not None:
             user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, twofa = result
-            balance = BalanceDao.get_balance_by_user_id(user_id_in_db)
+            balance = AccountDao.get_balance_by_user_id(user_id_in_db)
             user = User(user_id_in_db, username_in_db, first_name, last_name, password, account_num_in_db, balance)
         else:
             return None
@@ -65,7 +70,7 @@ class UserDao:
         return user
 
 
-class BalanceDao:
+class AccountDao:
     @staticmethod
     def get_balance_by_user_id(user_id):
         stmt = "SELECT * FROM balances WHERE user_id = ?"
@@ -85,51 +90,8 @@ class BalanceDao:
 
         return balance
 
-
     @staticmethod
-    def log_transfer(sender_id, beneficiary, amount):
-        stmt = "INSERT INTO transfers(sender_id, receiver_id, amount, timestamp) VALUES(?, ?, ?, ?)"
-        globals.DB_CURSOR.execute(stmt, (sender_id, beneficiary, amount, datetime.now()))
-        globals.DB_CONN.commit()
-
-    @staticmethod
-    def list_transfers(user_id):
-        stmt = """
-            SELECT
-                strftime('%Y-%m-%d %H:%M:%S', t.timestamp) as timestamp,
-                s.user_id, s.username, s.first_name, s.last_name,
-                r.user_id, r.username, r.first_name, r.last_name,
-                t.amount
-            FROM transfers t
-            LEFT JOIN users s ON t.sender_id = s.user_id
-            LEFT JOIN users r ON t.receiver_id = r.user_id
-            WHERE t.sender_id = ? or t.receiver_id = ?
-            """
-
-        globals.DB_CURSOR.execute(stmt, (user_id, user_id))
-        result = globals.DB_CURSOR.fetchall()
-
-        res_str = "Tranzakcióid:\n"
-
-        from utils.globals import number_formatter
-
-        for row in result:
-            (timestamp, s_user_id, sender_username, sender_first_name, sender_last_name,
-             r_user_id, rec_username, rec_first_name, rec_last_name, amount) = row
-            emoji = '↗' if s_user_id != user_id else '↘'
-            tipus = "Bejövő" if s_user_id != user_id else "Kimenő"
-
-            res_str += "---------------------\n"
-            res_str += f"<b>Típus:</b> {tipus}{emoji}\n"
-            res_str += f"<b>Időpont:</b> {timestamp}\n"
-            res_str += f"<b>Küldő:</b> {'Te' if s_user_id == user_id else sender_username}\n"
-            res_str += f"<b>Küldő:</b> {'Te' if r_user_id == user_id else rec_username}\n"
-            res_str += f"<b>Összeg:</b> {number_formatter(amount)} HUF\n"
-
-        return res_str
-
-    @staticmethod
-    def insert_pocket(user: User, pocket_name: str):
+    def insert_pocket(user: User, pocket_name: str) -> bool:
         # helyi
         pockets = user.balance.pockets
         if len(pockets.keys()) == 4:
@@ -140,14 +102,20 @@ class BalanceDao:
             # helyi
             pockets[pocket_name] = 0
 
-        # db
-        sql = "INSERT INTO balances(user_id, pocket_name) VALUES(?,?)"
-        globals.DB_CURSOR.execute(sql, (user.user_id, pocket_name))
+        try:
+            # db
+            sql = "INSERT INTO balances(user_id, pocket_name) VALUES(?,?)"
+            globals.DB_CURSOR.execute(sql, (user.user_id, pocket_name))
 
-        globals.DB_CONN.commit()
+            globals.DB_CONN.commit()
+            return True
+        except (IOError, ValueError, globals.sqlite3.Error) as e:
+            print("Error:", e)
+            globals.DB_CONN.rollback()
+            return False
 
     @staticmethod
-    def rename_pocket(user: User, old_pocket_name, new_pocket_name):
+    def rename_pocket(user: User, old_pocket_name, new_pocket_name) -> bool:
         # helyi
         pockets = user.balance.pockets
         if old_pocket_name not in pockets.keys():
@@ -160,51 +128,124 @@ class BalanceDao:
             pockets[new_pocket_name] = amount
 
         # db
-        sql = 'UPDATE balances SET pocket_name = ? WHERE pocket_name = ? AND user_id = ?'
+        try:
+            sql = 'UPDATE balances SET pocket_name = ? WHERE pocket_name = ? AND user_id = ?'
+            globals.DB_CURSOR.execute(sql, (new_pocket_name, old_pocket_name, user.user_id))
 
-        globals.DB_CURSOR.execute(sql, (new_pocket_name, old_pocket_name, user.user_id))
-        globals.DB_CONN.commit()
+            globals.DB_CONN.commit()
+            return True
+        except (IOError, ValueError, globals.sqlite3.Error) as e:
+            print("Error:", e)
+            globals.DB_CONN.rollback()
+            return False
 
     @staticmethod
-    def change_balance(user: User, pocket_name: str = None, amount: int = 0, nullify: bool = False):
+    def change_balance(user: User, pocket_name: str = None, amount: int = 0, nullify: bool = False) -> bool:
         pockets = user.balance.pockets
 
         # ha nincs megadva a zseb neve, akkor kiválasztjuk az elsőt, és azt módosítjuk
         if pocket_name is None:
-            # helyi -> első zseb neve
-            default_pocket = list(pockets.keys())[0]
-            pockets[default_pocket] += amount
-
-            # db -> user első rekordjának a zsebének a neve
-            stmt = 'SELECT pocket_name FROM balances WHERE user_id = ?'
-            res = globals.DB_CURSOR.execute(stmt, (user.user_id,))
-            pocket_name = res.fetchone()[0]
-
+            pocket_name = list(pockets.keys())[0]
         elif pocket_name not in pockets.keys():
             raise IOError('Nincs ilyen nevű zseb.')
 
-        if nullify:
-            stmt = 'UPDATE balances SET balance = 0 WHERE user_id = ? and pocket_name = ?'
-            globals.DB_CURSOR.execute(stmt, (user.user_id, pocket_name))
-        else:
-            stmt = 'UPDATE balances SET balance = balance + ? WHERE user_id = ? and pocket_name = ?'
-            globals.DB_CURSOR.execute(stmt, (amount, user.user_id, pocket_name))
+        # helyi
+        multiplier = 0 if nullify else 1
+        pockets[pocket_name] += amount
+        pockets[pocket_name] *= multiplier
 
-        globals.DB_CONN.commit()
+        # db
+        try:
+            stmt = 'UPDATE balances SET balance = (balance + ?) * ? WHERE user_id = ? and pocket_name = ?'
+            globals.DB_CURSOR.execute(stmt, (amount, multiplier, user.user_id, pocket_name))
+
+            globals.DB_CONN.commit()
+            print(f"new balance of pocket'{pocket_name}' is {pockets[pocket_name]}")
+            return True
+        except (IOError, ValueError, globals.sqlite3.Error) as e:
+            print("Error:", e)
+            globals.DB_CONN.rollback()
+            return False
 
     @staticmethod
-    def remove_pocket(user: User, pocket_name):
+    def remove_pocket(user: User, pocket_name) -> bool:
         pockets = user.balance.pockets
         if pocket_name not in pockets.keys():
             raise IOError('Nincs ilyen nevű zseb.')
         elif pockets[pocket_name] != 0:
             raise Exception('Ez a zseb nem üres.')
         else:
-            # helyi
-            print("REMOVE POCKET C      ALLED")
-            del pockets[pocket_name]
-            # db
-            sql = "DELETE FROM balances WHERE pocket_name = ? and user_id = ?"
-            globals.DB_CURSOR.execute(sql, (pocket_name, user.user_id))
-            globals.DB_CONN.commit()
+            try:
+                # helyi
+                del pockets[pocket_name]
+                # db
+                sql = "DELETE FROM balances WHERE pocket_name = ? and user_id = ?"
+                globals.DB_CURSOR.execute(sql, (pocket_name, user.user_id))
 
+                globals.DB_CONN.commit()
+                return True
+            except (IOError, ValueError, globals.sqlite3.Error) as e:
+                print("Error:", e)
+                globals.DB_CONN.rollback()
+                return False
+
+
+class TransferDao:
+    @staticmethod
+    def log_transfer(sender_id, beneficiary, amount):
+        try:
+            stmt = "INSERT INTO transfers(sender_id, receiver_id, amount, timestamp) VALUES(?, ?, ?, ?)"
+            globals.DB_CURSOR.execute(stmt, (sender_id, beneficiary, amount, datetime.now()))
+
+            globals.DB_CONN.commit()
+            return True
+        except (IOError, ValueError, globals.sqlite3.Error) as e:
+            print("Error:", e)
+            globals.DB_CONN.rollback()
+            return False
+
+    @staticmethod
+    def list_transfers(user: User, date_filter=None):
+        user_id = user.user_id
+
+        stmt = """
+                SELECT
+                    strftime('%Y-%m-%d %H:%M:%S', t.timestamp) as timestamp,
+                    s.user_id, s.username, s.first_name, s.last_name,
+                    r.user_id, r.username, r.first_name, r.last_name,
+                    t.amount
+                FROM transfers t
+                LEFT JOIN users s ON t.sender_id = s.user_id
+                LEFT JOIN users r ON t.receiver_id = r.user_id
+                WHERE (t.sender_id = ? or t.receiver_id = ?)
+                """
+
+        if date_filter is None:
+            stmt += " ORDER BY t.timestamp DESC"
+            globals.DB_CURSOR.execute(stmt, (user_id, user_id))
+        else:
+            stmt += " and date(t.timestamp) >= ? ORDER BY t.timestamp DESC"
+            globals.DB_CURSOR.execute(stmt, (user_id, user_id, date_filter))
+
+        result = globals.DB_CURSOR.fetchall()
+
+        from utils.globals import number_formatter
+        transfers = []
+
+        for row in result:
+            (timestamp, s_user_id, sender_username, sender_first_name, sender_last_name,
+             r_user_id, rec_username, rec_first_name, rec_last_name, amount) = row
+            emoji = '↗' if s_user_id != user_id else '↘'
+            tipus = "Bejövő" if s_user_id != user_id else "Kimenő"
+
+            transaction = {
+                "Típus": f"{tipus}{emoji}",
+                "Időpont": timestamp,
+                "Küldő": "Te" if s_user_id == user_id else sender_username,
+                "Fogadó": "Te" if r_user_id == user_id else rec_username,
+                "Összeg": f"{number_formatter(amount)} HUF"
+            }
+
+            transfers.append(transaction)
+
+        return transfers

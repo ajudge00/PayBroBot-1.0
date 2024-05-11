@@ -12,9 +12,9 @@ def set_chat_id(chat_id):
 def status(message):
     globals.BOT.send_message(
         message.chat.id,
-        f"CHAT_ID: {globals.CHAT_ID}\nLOGGED_IN:"
-        f"{globals.LOGGED_IN}\n" +
-        f"CURRENT_USER: {globals.CURRENT_USER.username}")
+        f"CHAT_ID: {globals.CHAT_ID}\n"
+        f"LOGGED_IN: {globals.LOGGED_IN}\n" +
+        f"CURRENT_USER: {globals.CURRENT_USER.username if globals.LOGGED_IN else 'None'}")
 
 
 @globals.BOT.message_handler(commands=['start', 'help', 'cancel'])
