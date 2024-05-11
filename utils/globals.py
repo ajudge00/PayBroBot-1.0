@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from enum import Enum
 from typing import Final
@@ -11,8 +10,12 @@ TOKEN: Final = open("token.txt", 'r').read()
 BOT: Final = telebot.TeleBot(TOKEN)
 LONG_TEXTS: Final = json.load(open("utils/long_texts.json", "r", encoding="utf-8"))
 
-DB_CONN: Final = sqlite3.connect("database.db", check_same_thread=False)
-DB_CURSOR: Final = DB_CONN.cursor()
+try:
+    DB_CONN: Final = sqlite3.connect("database.db", check_same_thread=False)
+    DB_CURSOR: Final = DB_CONN.cursor()
+except sqlite3.Error as e:
+    print(e)
+    exit(1)
 
 # SESSION
 LOGGED_IN = False

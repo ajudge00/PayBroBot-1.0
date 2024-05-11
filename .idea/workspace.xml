@@ -5,12 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8a1125a3-7a9c-48cf-8e4e-1d3a10fc49ab" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/PayBroBot.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PayBroBot.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ideas.txt" beforeDir="false" afterPath="$PROJECT_DIR$/ideas.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main/command_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/main/top_level_commands.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main/convo_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/main/convo_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/dao.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/dao.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.db" beforeDir="false" afterPath="$PROJECT_DIR$/database.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/session_dump.json" beforeDir="false" afterPath="$PROJECT_DIR$/session_dump.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/globals.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/globals.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,7 +39,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;terminal&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
   &quot;keyToStringList&quot;: {
@@ -85,7 +85,8 @@
       <workItem from="1715367251099" duration="18000" />
       <workItem from="1715367598284" duration="6391000" />
       <workItem from="1715411108726" duration="6990000" />
-      <workItem from="1715427236174" duration="2910000" />
+      <workItem from="1715427236174" duration="3582000" />
+      <workItem from="1715430861512" duration="662000" />
     </task>
     <servers />
   </component>
