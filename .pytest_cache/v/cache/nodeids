@@ -1,0 +1,19 @@
+[
+  "tests/account_dao_tests.py::AccountDaoTests::test_change_balance",
+  "tests/account_dao_tests.py::AccountDaoTests::test_get_balance_by_user_id",
+  "tests/account_dao_tests.py::AccountDaoTests::test_insert_pocket",
+  "tests/account_dao_tests.py::AccountDaoTests::test_remove_pocket",
+  "tests/account_dao_tests.py::AccountDaoTests::test_rename_pocket",
+  "tests/model_tests.py::TestBalance::test_get_all_pockets",
+  "tests/model_tests.py::TestBalance::test_get_full_balance",
+  "tests/model_tests.py::TestBalance::test_get_pocket_balance",
+  "tests/model_tests.py::TestBalance::test_get_pocket_balance_hianyzo",
+  "tests/model_tests.py::TestBalance::test_init",
+  "tests/model_tests.py::TestBalance::test_str",
+  "tests/model_tests.py::UserTests::test_init",
+  "tests/model_tests.py::UserTests::test_str",
+  "tests/transfer_dao_tests.py::TransferDaoTests::test_a_list_transfers",
+  "tests/transfer_dao_tests.py::TransferDaoTests::test_b_log_transfer",
+  "tests/user_dao_tests.py::UserDaoTests::test_create_user",
+  "tests/user_dao_tests.py::UserDaoTests::test_get_user_by"
+]
